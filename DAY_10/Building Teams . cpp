@@ -1,0 +1,49 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+bool dfs(int node, vector<vector<int>>& gp, vector<int>& vis, vector<int>& cmp, int color) {
+    vis[node] = 1;
+    cmp[node] = color;
+
+    for (auto v : gp[node]) {
+        if (!vis[v]) {
+            if (!dfs(v, gp, vis, cmp, 3 - color)) return false; // alternate color
+        } else if (cmp[v] == cmp[node]) {
+            return false; // conflict → not bipartite
+        }
+    }
+    return true;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m;
+    cin >> n >> m;
+
+    vector<vector<int>> gp(n + 1);
+    for (int i = 0; i < m; i++) {
+        int a, b;
+        cin >> a >> b;
+        gp[a].push_back(b);
+        gp[b].push_back(a);
+    }
+
+    vector<int> vis(n + 1, 0);
+    vector<int> cmp(n + 1, 0);
+
+    for (int i = 1; i <= n; i++) {
+        if (!vis[i]) {
+            if (!dfs(i, gp, vis, cmp, 1)) {
+                cout << "IMPOSSIBLE\n";
+                return 0;
+            }
+        }
+    }
+
+    for (int i = 1; i <= n; i++) {
+        cout << cmp[i] << " ";
+    }
+    cout << "\n";
+}
