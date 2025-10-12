@@ -1,0 +1,127 @@
+#include <iostream>
+#include <vector>
+#include <numeric>
+#include <algorithm>
+ 
+// DSU data structure
+struct DSU {
+    std::vector<int> parent;
+    DSU(int n) {
+        parent.resize(n + 1);
+        std::iota(parent.begin(), parent.end(), 0);
+    }
+    int find(int i) {
+        if (parent[i] == i)
+            return i;
+        return parent[i] = find(parent[i]);
+    }
+    void unite(int i, int j) {
+        int root_i = find(i);
+        int root_j = find(j);
+        if (root_i != root_j) {
+            parent[root_i] = root_j;
+        }
+    }
+};
+ 
+void solve() {
+    int n, k, s, q;
+    std::cin >> n >> k >> s >> q;
+ 
+    std::vector<std::vector<int>> adj(n + 1);
+    for (int i = 0; i < n - 1; ++i) {
+        int u, v;
+        std::cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+ 
+    std::vector<std::vector<int>> nodes_with_color(k + 1);
+    for (int i = 0; i < s; ++i) {
+        int v, x;
+        std::cin >> v >> x;
+        nodes_with_color[x].push_back(v);
+    }
+ 
+    struct Query {
+        int u, v, id;
+    };
+    std::vector<Query> queries_list(q);
+    std::vector<std::vector<std::pair<int, int>>> queries_by_smaller_node(n + 1);
+    for (int i = 0; i < q; ++i) {
+        int u, v;
+        std::cin >> u >> v;
+        if (u > v) std::swap(u, v);
+        queries_list[i] = {u, v, i};
+        queries_by_smaller_node[u].push_back({v, i});
+    }
+ 
+    std::vector<long long> ans(q, 0);
+    std::vector<bool> has_color(n + 1, false);
+ 
+    for (int c = 1; c <= k; ++c) {
+        if (nodes_with_color[c].empty()) {
+            continue;
+        }
+ 
+        const auto& V_c = nodes_with_color[c];
+        
+        DSU dsu(n);
+        for (int node : V_c) {
+            has_color[node] = true;
+        }
+        for (int u : V_c) {
+            for (int v : adj[u]) {
+                if (u < v && has_color[v]) {
+                    dsu.unite(u, v);
+                }
+            }
+        }
+        
+        long long cost1 = 0;
+        for(int u : V_c) {
+            cost1 += queries_by_smaller_node[u].size();
+        }
+ 
+        if (cost1 < q) {
+            // Strategy 1: Iterate through queries attached to nodes with this color
+            for (int u : V_c) {
+                for (auto const& [v, q_idx] : queries_by_smaller_node[u]) {
+                     if (has_color[v] && dsu.find(u) == dsu.find(v)) {
+                        ans[q_idx]++;
+                    }
+                }
+            }
+        } else {
+             // Strategy 2: Iterate through all queries
+            for(int i = 0; i < q; ++i){
+                int u = queries_list[i].u;
+                int v = queries_list[i].v;
+                if(has_color[u] && has_color[v] && dsu.find(u) == dsu.find(v)){
+                    ans[i]++;
+                }
+            }
+        }
+        
+        // Reset has_color for next iteration
+        for (int node : V_c) {
+            has_color[node] = false;
+        }
+    }
+ 
+    for (int i = 0; i < q; ++i) {
+        std::cout << ans[i] << (i == q - 1 ? "" : " ");
+    }
+    std::cout << "\n";
+}
+ 
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
+    int t;
+    std::cin >> t;
+    while (t--) {
+        solve();
+    }
+    return 0;
+}
